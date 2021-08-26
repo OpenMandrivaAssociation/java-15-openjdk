@@ -1,6 +1,6 @@
 # Use gcc instead of clang
 %bcond_with gcc
-%bcond_without system_jdk
+%bcond_with system_jdk
 # Without bootstrap, the package BuildRequires
 # rpm-javamacros (which in turn requires this package)
 # so jmod(*) and java(*) Provides: can be generated correctly.
@@ -9,8 +9,9 @@
 # packages various shared library files inside zip (jmod) packages.
 # Those aren't seen by the splitter and therefore get insanely large.
 # Better to use OpenJDK's own debuginfo splitter here even if it
-# results in somewhat nonstandard locations for debuginfo files.
-%global debug_package %{nil}
+# results in somewhat nonstandard locations for debuginfo files that
+# rpm's package generator doesn't fully catch
+%global _empty_manifest_terminate_build 0
 
 # OpenJDK builds a lot of underlinked libraries and tools...
 %global _disable_ld_no_undefined 1
@@ -26,21 +27,16 @@
 %define oldmajor %(echo $((%{major}-1)))
 
 Name:		java-15-openjdk
-Version:	15.0.0
+Version:	15.0.5
 Release:	1
 Summary:	Java Runtime Environment (JRE) %{major}
 Group:		Development/Languages
 License:	GPLv2, ASL 1.1, ASL 2.0, LGPLv2.1
 URL:		http://openjdk.java.net/
-# Source must be packages from upstream's hg repositories using the
-# update_package.sh script
-# PROJECT_NAME=jdk-updates REPO_NAME=jdk14u VERSION=jdk-14+36 ./generate_source_tarball.sh
-Source0:	jdk-updates-jdk%{major}u-jdk-%{major}-ga.tar.zst
+Source0:	https://github.com/openjdk/jdk15u/archive/refs/tags/jdk-%{version}+1.tar.gz
 # Extra tests
 Source50:	TestCryptoLevel.java
 Source51:	TestECDSA.java
-# Used to create source tarballs - not used by the rpm build process itself
-Source100:	remove-intree-libraries.sh
 # Patches from Fedora
 Patch0:		https://src.fedoraproject.org/rpms/java-openjdk/raw/master/f/rh1648249-add_commented_out_nss_cfg_provider_to_java_security.patch
 Patch1:		https://src.fedoraproject.org/rpms/java-openjdk/raw/master/f/rh1648242-accessible_toolkit_crash_do_not_break_jvm.patch
@@ -51,6 +47,7 @@ Patch4:		https://src.fedoraproject.org/rpms/java-openjdk/raw/master/f/pr3183-rh1
 Patch1002:	java-12-compile.patch
 Patch1003:	openjdk-15-nss-3.57.patch
 Patch1004:	openjdk-12-system-harfbuzz.patch
+Patch1005:	openjdk-16-glibc-2.34.patch
 #Patch1005:	openjdk-13-fix-build.patch
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -185,7 +182,9 @@ Group:		Development/Debug
 Debug information for package %{name}
 
 %prep
-%autosetup -p1 -n openjdk
+%autosetup -p1 -n jdk15u-jdk-%{version}-1
+# We use system libs
+rm -rf src/java.desktop/share/native/libfontmanager/harfbuzz
 
 EXTRA_CFLAGS="$(echo %{optflags} -fuse-ld=bfd -Wno-error -fno-delete-null-pointer-checks -Wformat -Wno-cpp -DSYSTEM_NSS -I%{_includedir}/nss -I%{_includedir}/nspr4 |sed -r -e 's|-O[0-9sz]*||;s|-Werror=format-security||g')"
 EXTRA_CXXFLAGS="$EXTRA_CFLAGS"
