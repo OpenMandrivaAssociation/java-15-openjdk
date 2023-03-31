@@ -28,7 +28,7 @@
 
 Name:		java-15-openjdk
 Version:	15.0.5
-Release:	1
+Release:	2
 Summary:	Java Runtime Environment (JRE) %{major}
 Group:		Development/Languages
 License:	GPLv2, ASL 1.1, ASL 2.0, LGPLv2.1
